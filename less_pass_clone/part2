@@ -1,0 +1,217 @@
+# Building a "LessPass" Clone in Python (Part 2: Enhanced Features)
+
+In **Part 1**, we built a basic version of a password manager that generates passwords based on user input. Now in **Part 2**, we will add the following features:
+1. Hide the master password input (so it’s not displayed in plain text).
+2. Allow the user to choose how many hash iterations to increase security.
+3. Give the user options to remove special characters, capital letters, or numbers from the generated password.
+4. After generating the password, allow the user to copy the password to the clipboard or clear the terminal.
+
+---
+
+## Step 1: **Hide Master Password Input**
+
+We'll use Python's `getpass` module to securely take password input without showing the typed characters.
+
+```python
+import getpass
+
+def get_user_input():
+    site = input("Enter the site name (e.g., example.com): ")
+    username = input("Enter your username: ")
+    master_password = getpass.getpass("Enter your master password (hidden): ")  # Hides the input
+    return site, username, master_password
+```
+
+Now, the master password will be hidden when the user types it, enhancing security.
+
+---
+
+## Step 2: **Allow User to Select Hash Iterations**
+
+We can ask the user how many times they want to hash the combined string. More iterations mean added security but also slower generation times.
+
+```python
+def get_hash_iterations():
+    while True:
+        try:
+            iterations = int(input("Enter the number of hash iterations (e.g., 1000 for better security): "))
+            if iterations > 0:
+                return iterations
+        except ValueError:
+            print("Please enter a valid number.")
+```
+
+We’ll modify our `generate_hash` function to hash the combined string multiple times:
+
+```python
+def generate_hash(site, username, master_password, iterations):
+    combined_string = f"{site}{username}{master_password}"
+    hash_object = hashlib.sha256(combined_string.encode())
+    
+    for _ in range(iterations - 1):  # Hashing multiple times
+        hash_object = hashlib.sha256(hash_object.digest())
+    
+    return hash_object.hexdigest()
+```
+
+---
+
+## Step 3: **Customizing Password Generation**
+
+We’ll give the user the option to remove special characters, capital letters, or numbers from the generated password.
+
+```python
+def get_password_customizations():
+    remove_special = input("Remove special characters (e.g., !@#)? (y/n): ").lower() == 'y'
+    remove_capital = input("Remove capital letters? (y/n): ").lower() == 'y'
+    remove_numbers = input("Remove numbers? (y/n): ").lower() == 'y'
+    return remove_special, remove_capital, remove_numbers
+```
+
+We will modify our `generate_password` function to take these customizations into account:
+
+```python
+def generate_password(hash_value, length=16, remove_special=False, remove_capital=False, remove_numbers=False):
+    all_characters = string.ascii_letters + string.digits + string.punctuation
+    
+    if remove_special:
+        all_characters = ''.join(c for c in all_characters if c not in string.punctuation)
+    if remove_capital:
+        all_characters = ''.join(c for c in all_characters if c not in string.ascii_uppercase)
+    if remove_numbers:
+        all_characters = ''.join(c for c in all_characters if c not in string.digits)
+
+    random.seed(hash_value)
+    password = ''.join(random.choice(all_characters) for _ in range(length))
+    return password
+```
+
+---
+
+## Step 4: **Copy to Clipboard or Clean Terminal**
+
+We will use Python's `pyperclip` module to handle copying the generated password to the clipboard. If the user does not want to copy it, we can clear the terminal instead.
+
+1. Install `pyperclip` by running:
+   ```bash
+   pip install pyperclip
+   ```
+
+2. Add functionality to ask the user whether to copy or clear the terminal:
+
+```python
+import os
+import pyperclip
+
+def post_password_actions(password):
+    action = input("Press 'c' to copy the password to clipboard, or 'Enter' to clear the terminal: ").lower()
+    
+    if action == 'c':
+        pyperclip.copy(password)
+        print("Password copied to clipboard!")
+    else:
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear terminal
+        print("Terminal cleared.")
+```
+
+---
+
+## Full Code (with Enhancements)
+
+Here's the full code with the new features:
+
+```python
+import hashlib
+import string
+import random
+import getpass
+import os
+import pyperclip
+
+def get_user_input():
+    site = input("Enter the site name (e.g., example.com): ")
+    username = input("Enter your username: ")
+    master_password = getpass.getpass("Enter your master password (hidden): ")  # Hides input
+    return site, username, master_password
+
+def get_hash_iterations():
+    while True:
+        try:
+            iterations = int(input("Enter the number of hash iterations (e.g., 1000 for better security): "))
+            if iterations > 0:
+                return iterations
+        except ValueError:
+            print("Please enter a valid number.")
+
+def generate_hash(site, username, master_password, iterations):
+    combined_string = f"{site}{username}{master_password}"
+    hash_object = hashlib.sha256(combined_string.encode())
+    
+    for _ in range(iterations - 1):  # Hashing multiple times
+        hash_object = hashlib.sha256(hash_object.digest())
+    
+    return hash_object.hexdigest()
+
+def get_password_customizations():
+    remove_special = input("Remove special characters (e.g., !@#)? (y/n): ").lower() == 'y'
+    remove_capital = input("Remove capital letters? (y/n): ").lower() == 'y'
+    remove_numbers = input("Remove numbers? (y/n): ").lower() == 'y'
+    return remove_special, remove_capital, remove_numbers
+
+def generate_password(hash_value, length=16, remove_special=False, remove_capital=False, remove_numbers=False):
+    all_characters = string.ascii_letters + string.digits + string.punctuation
+    
+    if remove_special:
+        all_characters = ''.join(c for c in all_characters if c not in string.punctuation)
+    if remove_capital:
+        all_characters = ''.join(c for c in all_characters if c not in string.ascii_uppercase)
+    if remove_numbers:
+        all_characters = ''.join(c for c in all_characters if c not in string.digits)
+
+    random.seed(hash_value)
+    password = ''.join(random.choice(all_characters) for _ in range(length))
+    return password
+
+def post_password_actions(password):
+    action = input("Press 'c' to copy the password to clipboard, or 'Enter' to clear the terminal: ").lower()
+    
+    if action == 'c':
+        pyperclip.copy(password)
+        print("Password copied to clipboard!")
+    else:
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear terminal
+        print("Terminal cleared.")
+
+def main():
+    print("Welcome to LessPass Clone!")
+
+    site, username, master_password = get_user_input()
+    iterations = get_hash_iterations()
+
+    # Generate the hash
+    hash_value = generate_hash(site, username, master_password, iterations)
+    print(f"Hash generated: {hash_value[:8]}...")
+
+    # Get password customizations
+    remove_special, remove_capital, remove_numbers = get_password_customizations()
+
+    # Generate a password
+    password = generate_password(hash_value, length=16, remove_special=remove_special, remove_capital=remove_capital, remove_numbers=remove_numbers)
+    print(f"Generated password: {password}")
+
+    # Post-password actions
+    post_password_actions(password)
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## Summary of Enhancements:
+1. **Hidden Master Password**: The master password is now hidden while typing.
+2. **Hash Iterations**: Users can select how many times the hash function should be applied, enhancing security.
+3. **Password Customizations**: Users can choose to remove special characters, capital letters, or numbers from the generated password.
+4. **Clipboard/Terminal**: After generating the password, users can copy it to the clipboard or clear the terminal.
+
+These features make our "LessPass" clone much more flexible, secure, and user-friendly. You can further enhance it by adding a graphical user interface (GUI) or additional password strength options.

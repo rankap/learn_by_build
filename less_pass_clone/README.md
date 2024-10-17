@@ -187,4 +187,4 @@ if __name__ == "__main__":
 
 You've successfully built a basic password manager using Python! This project demonstrates how to use hashing for deterministic password generation, which is the core of how LessPass works. You can now enhance the project by adding security improvements, like salting or password complexity checks. Additionally, you could build a GUI for a more user-friendly experience. 
 
-Happy coding!
+## READ Part 2
